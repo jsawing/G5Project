@@ -24,7 +24,8 @@ jobs:
         run: |
           az acr build \
             --registry ${{ vars.ACR_NAME }} \
-            --image hello-cicd:${{ github.sha }} .          
+            --image hello-cicd:${{ github.sha }} .
+            --file application/Dockerfile          
 
       - name: Deploy to Container Apps
         run: |
