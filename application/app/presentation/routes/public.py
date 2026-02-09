@@ -5,7 +5,7 @@ This blueprint handles all public-facing pages including the landing page
 and subscription flow.
 """
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, redirect, render_template, request, url_for
 
 from app.business.services.subscription_service import SubscriptionService
 
@@ -24,6 +24,26 @@ def subscribe():
     return render_template("subscribe.html")
 
 
+@bp.route("/admin")
+def admin():
+    """Render the admin dashboard with real database data."""
+    service = SubscriptionService()
+    try:
+        subscribers = service.get_all_subscribers()
+    except Exception:
+        # Fallback if database is not initialized
+        subscribers = []
+    return render_template("admin.html", subscribers=subscribers)
+
+
+@bp.route("/admin/delete/<int:id>", methods=["POST"])
+def delete_subscriber(id):
+    """Handle subscriber deletion."""
+    service = SubscriptionService()
+    service.delete_subscriber(id)
+    return redirect(url_for("public.admin"))
+
+
 @bp.route("/subscribe/confirm", methods=["POST"])
 def subscribe_confirm():
     """Handle subscription form submission."""
@@ -32,7 +52,11 @@ def subscribe_confirm():
 
     # Use business layer for full subscription flow
     service = SubscriptionService()
-    success, error = service.subscribe(email, name)
+    try:
+        success, error = service.subscribe(email, name)
+    except Exception as e:
+        success = False
+        error = f"Database error: {str(e)}"
 
     if not success:
         # Return to form with error message, preserving input
@@ -53,3 +77,15 @@ def subscribe_confirm():
         email=normalized_email,
         name=normalized_name,
     )
+
+
+@bp.route("/subscribers")
+def subscribers_list():
+    """Render a list of all subscribers from the database."""
+    service = SubscriptionService()
+    try:
+        subscribers = service.get_all_subscribers()
+    except Exception:
+        # Fallback if database is not initialized
+        subscribers = []
+    return render_template("subscribers_list.html", subscribers=subscribers)

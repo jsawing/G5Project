@@ -8,6 +8,7 @@ data storage through the repository.
 
 import re
 from datetime import datetime, timezone
+from typing import Optional
 
 from app.data.repositories.subscriber_repository import SubscriberRepository
 
@@ -18,7 +19,7 @@ class SubscriptionService:
     # Email regex pattern for validation
     EMAIL_PATTERN = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
 
-    def __init__(self, repository: SubscriberRepository | None = None):
+    def __init__(self, repository: Optional[SubscriberRepository] = None):
         """
         Initialize the subscription service.
 
@@ -65,7 +66,7 @@ class SubscriptionService:
         """
         return email.lower().strip()
 
-    def normalize_name(self, name: str | None) -> str:
+    def normalize_name(self, name: Optional[str]) -> str:
         """
         Normalize name field.
 
@@ -82,7 +83,7 @@ class SubscriptionService:
             return "Subscriber"
         return name.strip()
 
-    def subscribe(self, email: str, name: str | None) -> tuple[bool, str]:
+    def subscribe(self, email: str, name: Optional[str]) -> tuple[bool, str]:
         """
         Full subscription flow: validate, check duplicate, save.
 
@@ -117,7 +118,25 @@ class SubscriptionService:
         self.repository.create(email=normalized_email, name=normalized_name)
         return True, ""
 
-    def process_subscription(self, email: str, name: str | None) -> dict:
+    def get_all_subscribers(self) -> list:
+        """
+        Retrieve all subscribers from the database.
+
+        Returns:
+            List of Subscriber objects
+        """
+        return self.repository.find_all()
+
+    def delete_subscriber(self, subscriber_id: int) -> None:
+        """
+        Delete a subscriber from the database.
+
+        Args:
+            subscriber_id: The ID of the subscriber to remove
+        """
+        self.repository.delete_by_id(subscriber_id)
+
+    def process_subscription(self, email: str, name: Optional[str]) -> dict:
         """
         Process and prepare subscription data (legacy method).
 

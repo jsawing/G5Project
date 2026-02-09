@@ -32,6 +32,11 @@ class Subscriber(db.Model):
         default=lambda: datetime.now(timezone.utc),
     )
 
+    def __init__(self, email: str, name: str = "Subscriber"):
+        """Initialize with email and name."""
+        self.email = email
+        self.name = name
+
     def __repr__(self) -> str:
         """Return string representation for debugging."""
         return f"<Subscriber {self.email}>"

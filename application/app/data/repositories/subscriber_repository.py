@@ -5,6 +5,8 @@ This repository encapsulates all SQLAlchemy queries for the Subscriber model,
 keeping the business layer free from database-specific code.
 """
 
+from typing import Optional
+
 from app import db
 from app.data.models.subscriber import Subscriber
 
@@ -17,7 +19,7 @@ class SubscriberRepository:
     All database interactions for subscribers should go through this class.
     """
 
-    def find_by_email(self, email: str) -> Subscriber | None:
+    def find_by_email(self, email: str) -> Optional[Subscriber]:
         """
         Find a subscriber by email address.
 
@@ -59,3 +61,24 @@ class SubscriberRepository:
         db.session.add(subscriber)
         db.session.commit()
         return subscriber
+
+    def find_all(self) -> list[Subscriber]:
+        """
+        Retrieve all subscribers ordered by subscription date (newest first).
+
+        Returns:
+            List of Subscriber instances
+        """
+        return Subscriber.query.order_by(Subscriber.subscribed_at.desc()).all()
+
+    def delete_by_id(self, subscriber_id: int) -> None:
+        """
+        Delete a subscriber by their ID.
+
+        Args:
+            subscriber_id: The primary key of the subscriber to delete
+        """
+        subscriber = db.session.get(Subscriber, subscriber_id)
+        if subscriber:
+            db.session.delete(subscriber)
+            db.session.commit()

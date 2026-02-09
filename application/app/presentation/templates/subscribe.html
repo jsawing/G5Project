@@ -1,11 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Subscribe - News Flash{% endblock %}
+{% block title %}Prenumerera - Zen Nyhetsbrev{% endblock %}
 
 {% block content %}
+<style>
+    .subscribe__container {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 2rem;
+        border-radius: 8px;
+    }
+</style>
 <section class="subscribe">
     <div class="subscribe__container">
-        <h1 class="subscribe__title">Subscribe to News Flash</h1>
-        <p class="subscribe__subtitle">Get the latest tech news delivered to your inbox every week.</p>
+        <h1 class="subscribe__title">Prenumerera på Zen Nyhetsbrev</h1>
+        <p class="subscribe__subtitle">Få en lugn, inspirerande uppdatering om Japan direkt till din e-post.</p>
 
         {% if error %}
             <div class="error">
@@ -13,51 +20,106 @@
             </div>
         {% endif %}
 
+        <div id="clientValidationError" class="form__error-banner" hidden></div>
+
         <form class="form" action="{{ url_for('public.subscribe_confirm') }}" method="POST">
             <div class="form__group">
-                <label class="form__label" for="email">Email Address *</label>
+                <label class="form__label" for="email">E-postadress *</label>
                 <input type="email" id="email" name="email" class="form__input" placeholder="you@example.com" value="{{ email or '' }}" required>
             </div>
             <div class="form__group">
-                <label class="form__label" for="name">Name (optional)</label>
+                <label class="form__label" for="name">Namn (valfritt)</label>
                 <input
                     type="text"
                     id="name"
                     name="name"
                     class="form__input"
-                    placeholder="Your name"
+                    placeholder="Ditt namn"
                     value="{{ name or '' }}"
                 >
             </div>
-            <button type="submit" class="btn btn--primary form__submit">Subscribe</button>
+            <button type="submit" class="btn btn--primary form__submit">Prenumerera</button>
         </form>
-        <p class="subscribe__back"><a href="{{ url_for('public.index') }}">&larr; Back to Home</a></p>
+        <p class="subscribe__back"><a href="{{ url_for('public.index') }}">&larr; Till startsidan</a></p>
     </div>
 </section>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    .subscribe { padding: 4rem 2rem; max-width: 500px; margin: 0 auto; }
-    .subscribe__container { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    .subscribe__title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .subscribe__subtitle { color: var(--color-text-light); margin-bottom: 2rem; }
-    .form__group { margin-bottom: 1.5rem; }
-    .form__label { display: block; font-weight: 600; margin-bottom: 0.5rem; }
-    .form__input { width: 100%; padding: 0.75rem 1rem; border: 2px solid #e5e7eb; border-radius: 0.5rem; }
-    .form__input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-    .form__submit { width: 100%; }
-    .form__input--error { border-color: #ef4444;}
-    .form__input--error:focus {border-color: #ef4444;box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);}
-    .form__error-banner {
-    background-color: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #dc2626;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
-    font-size: 0.875rem;
-    }
+{% block scripts %}
+<script>
+    (function () {
+        const STORAGE_KEY = 'zen_subscribers';
+        const SUCCESS_FLAG_KEY = 'zen_subscribe_success';
+        const form = document.querySelector('.form');
+        const emailInput = document.getElementById('email');
+        const errorBanner = document.getElementById('clientValidationError');
+        if (!form) return;
 
-</style>
+        function isValidEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        function showError(message) {
+            if (!errorBanner) return;
+            errorBanner.textContent = message;
+            errorBanner.hidden = false;
+            emailInput?.classList.add('form__input--error');
+        }
+
+        function clearError() {
+            if (errorBanner) {
+                errorBanner.hidden = true;
+                errorBanner.textContent = '';
+            }
+            emailInput?.classList.remove('form__input--error');
+        }
+
+        emailInput?.addEventListener('input', clearError);
+
+        form.addEventListener('submit', function (event) {
+            const nameInput = document.getElementById('name');
+
+            const email = (emailInput?.value || '').trim().toLowerCase();
+            const name = (nameInput?.value || '').trim();
+
+            if (!email) {
+                event.preventDefault();
+                showError('Ange en e-postadress innan du fortsätter.');
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                event.preventDefault();
+                showError('E-postadressen verkar inte vara korrekt skriven. Kontrollera formatet (t.ex. namn@domän.se).');
+                return;
+            }
+
+            clearError();
+
+            let subscribers = [];
+            try {
+                subscribers = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            } catch (_) {
+                subscribers = [];
+            }
+
+            const existingIndex = subscribers.findIndex((entry) => entry.email === email);
+            const newEntry = {
+                id: existingIndex >= 0 ? subscribers[existingIndex].id : Date.now().toString(),
+                name: name || 'Anonym läsare',
+                email,
+                subscribedAt: new Date().toISOString(),
+            };
+
+            if (existingIndex >= 0) {
+                subscribers[existingIndex] = newEntry;
+            } else {
+                subscribers.unshift(newEntry);
+            }
+
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(subscribers));
+            sessionStorage.setItem(SUCCESS_FLAG_KEY, '1');
+        });
+    })();
+</script>
 {% endblock %}
