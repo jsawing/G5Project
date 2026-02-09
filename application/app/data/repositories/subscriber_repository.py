@@ -59,3 +59,6 @@ class SubscriberRepository:
         db.session.add(subscriber)
         db.session.commit()
         return subscriber
+
+        
+
